@@ -4,9 +4,9 @@ import socket
 
 import time
 
-class pypp:
-    def __init__(self,port,mode):
-        self.TCP_ADDR= ('127.0.0.1',port)
+class commun:
+    def __init__(self,ip,port,mode):
+        self.TCP_ADDR= (ip,port)
         self.BUFFERSIZE= 6000
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,7 +81,7 @@ class pypp:
         return
 
 def testServer():
-    comm= pypp(8888,"server")
+    comm= commun(8888,"server")
     comm.waitForConnection()
 
     testData= np.arange(0,5).astype(np.double)*1.002
@@ -94,7 +94,7 @@ def testServer():
     return
 
 def testClient():
-    comm = pypp(8888, "client")
+    comm = commun(8888, "client")
 
     t = 0
     while (t < 2):

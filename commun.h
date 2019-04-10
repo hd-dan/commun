@@ -30,15 +30,20 @@ private:
     bool fhvClient_;
     bool fstopRcv_;
     bool fnewData_;
+    bool fstopClientBind_;
 
     std::string rcvStrBuff_;
     std::vector<double> rcvVect_;
 
     boost::thread threadRcvData_;
     boost::thread threadMonitorTimeout_;
+    boost::thread threadWaitClientBind_;
     void monitorRcvTimeout();
+
     std::vector<double> processRcvStr();
     std::string processSendVect(std::vector<double> sendData);
+
+    void waitClientLoop();
 
     std::chrono::high_resolution_clock::time_point dataRcvTime_;
     double timeout_;
@@ -49,6 +54,7 @@ public:
     void closeSock();
 
     int waitForClient();
+    void waitClientBindThread();
 
     void rcvData();
     void rcvDataThread();
