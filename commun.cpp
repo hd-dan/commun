@@ -48,6 +48,8 @@ commun::~commun(){
 
 void commun::closeSock(){
     fstopRcv_= true;
+    fstopClientBind_= true;
+
     threadRcvData_.interrupt();
     threadMonitorTimeout_.interrupt();
     threadWaitClientBind_.interrupt();
