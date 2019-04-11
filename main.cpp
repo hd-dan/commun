@@ -43,8 +43,8 @@ void runClient(){
 
 
 void runServer(){
-//    std::string ip("127.0.0.1");
-    std::string ip("192.168.0.99");
+    std::string ip("127.0.0.1");
+//    std::string ip("192.168.0.99");
     int port= 8888;
     commun server(ip,port,true);
 
@@ -55,7 +55,7 @@ void runServer(){
     t0= std::chrono::high_resolution_clock::now();
     double t=0;
 
-    while(t<300){
+    while(t<10){
         t1= std::chrono::high_resolution_clock::now();
         t=std::chrono::duration_cast<std::chrono::duration<double> >(t1-t0).count();
 
@@ -118,8 +118,8 @@ void runSerialSend(){
 int main(){
     std::cout << "Hello World!" << std::endl;
 
-//    runServer();
-    runClient();
+    runServer();
+//    runClient();
 
     return 0;
 }

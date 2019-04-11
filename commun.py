@@ -159,7 +159,7 @@ class commun:
 
 
 def testServer():
-    comm= commun("127.0.0.1",8885,"server")
+    comm= commun("127.0.0.1",8888,"server")
 
     t=0
     while(t<30):
@@ -176,7 +176,7 @@ def testServer():
     return
 
 def testClient():
-    comm= commun("127.0.0.1",8885, "client")
+    comm= commun("127.0.0.1",8888, "client")
 
     t=0
     while(t<5):
