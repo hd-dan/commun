@@ -2,12 +2,7 @@
 import numpy as np
 import socket
 import sys
-
-# if sys.version_info[0]<3:
-#     import thread
-# else:
-#     import _thread
-from threading import Thread
+import threading
 
 import time
 
@@ -24,8 +19,8 @@ class commun:
         self.rcvStrBuff= ""
         self.rcvVect= np.array([])
 
-        self.threadRcv= None
-        self.threadWaitClient= None
+        self.threadRcv= threading.Thread(target=self.rcvData)
+        self.threadWaitClient= threading.Thread(target=self._waitForConnectionLoop)
         
         self.fhvClient= False
         self.fstopClientBind= False
@@ -47,18 +42,30 @@ class commun:
             self.fisServer=True
 
             self.waitForConnectionThread()
+            # self.waitForConnection()
 
         else:
             print("Unknown Mode.", mode)
 
+    def __del__(self):
+        self.closeSock()
+
     def waitForConnection(self):
         if not self.fisServer:
-            print("Not server mode\n")
-        print("Waiting for connection..\n")
-        (self.connectedSock, self.connectedSockAddr)= self.sock.accept()
-        self.fhvClient= True
+            print("Not server mode")
+        print("Waiting for connection..")
+        try:
+            self.sock.settimeout(5)
+            (self.connectedSock, self.connectedSockAddr)= self.sock.accept()
 
-        self.rcvDataThread()
+            self.fhvClient = True
+            self.fstopRcv = False
+            self.rcvDataThread()
+
+        except socket.timeout:
+            pass
+
+
         
         return
 
@@ -70,7 +77,7 @@ class commun:
         return
 
     def waitForConnectionThread(self):
-        self.threadWaitClient= Thread(target=self._waitForConnectionLoop).start()
+        self.threadWaitClient.start()
         return
 
     def _vector2Str(self,vector):
@@ -86,18 +93,20 @@ class commun:
             return -1
 
         vectStr= self._vector2Str(vector)
-        n= self.connectedSock.send(vectStr)
+        try:
+            n= self.connectedSock.send(vectStr)
+        except:
+            n=-1
 
         if (self.fisServer and n<0):
-            print("Client closed connection..\n")
+            print("Client closed connection..")
             self.fhvClient= False
-            self.threadRcv.interrupt()
-        #     rcvthread interrrupt
+            self.fstopRcv= True
+
             return -1
 
         if (n<0):
-            print("Server closed connection..\n")
-            exit(1)
+            print("Server closed connection..")
             return -1
 
         return n
@@ -118,17 +127,20 @@ class commun:
 
     def rcvData(self):
         while (not self.fstopRcv):
-            rcvStr= self.sock.recv(self.BUFFERSIZE)
+            rcvStr= self.connectedSock.recv(self.BUFFERSIZE)
             for i in range(0,len(rcvStr)):
                 if rcvStr[i]!='\n':
                     self.rcvStrBuff+=rcvStr[i]
                 else:
                     self._str2vector()
-        return
+
+            time.sleep(0.001)
+
+        return self.rcvVect
 
     def rcvDataThread(self):
-        # _thread.start_new_thread(self.rcvData,self)
-        self.threadRcv= Thread(target=self.rcvData).start()
+        self.threadRcv= threading.Thread(target=self.rcvData)
+        self.threadRcv.start()
         return
 
     def getData(self):
@@ -142,39 +154,49 @@ class commun:
         self.fstopRcv= True
         self.fstopClientBind= True
 
-        self.threadRcv.interrupt()
-        if (self.fisServer):
-            self.threadWaitClient.interrupt()
-
         self.sock.close()
         return
 
-def testServer():
-    comm= commun("127.0.0.1",8881,"server")
-    # comm.waitForConnection()
 
-    testData= np.arange(0,5).astype(np.double)*1.002
+def testServer():
+    comm= commun("127.0.0.1",8885,"server")
+
     t=0
-    while(t<6):
-        print(t, ": Sending ",testData)
-        comm.sendData(testData + t*0.5)
-        time.sleep(t+0.1)
-        t+=1
+    while(t<30):
+        comm.sendData(np.arange(0,5) + t*0.5)
+
+        # rcvData = comm.rcvData()
+        if (comm.checkNewData()):
+            rcvData= comm.getData()
+            print(t, ": ", rcvData)
+
+        time.sleep(0.5)
+        t+=0.5
+
+    comm.closeSock()
     return
 
 def testClient():
-    comm = commun("127.0.0.1",8881, "client")
+    comm= commun("127.0.0.1",8885, "client")
 
-    t = 0
-    while (t < 5):
-        print(t, ": Receiving ")
+    t=0
+    while(t<5):
+        comm.sendData(np.array([t,t*0.5]))
+
+        # rcvData= comm.rcvData()
         if (comm.checkNewData()):
-            rcvVect= comm.getData()
-            print(rcvVect)
-        t += 1
+            rcvData= comm.getData()
+            print(t, ": Receiving ", rcvData)
+
+        time.sleep(0.5)
+        t+=0.5
+
+    comm.closeSock()
     return
 
 if __name__ == '__main__':
-    # testServer()
-    testClient()
+    if sys.argv[1]=="server":
+        testServer()
+    elif sys.argv[1]=="client":
+        testClient()
 
