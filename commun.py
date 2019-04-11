@@ -1,10 +1,10 @@
 
 import numpy as np
 import socket
-import sys
 import threading
-
 import time
+
+import sys
 
 class commun:
     def __init__(self,ip,port,mode):
@@ -165,7 +165,6 @@ def testServer():
     while(t<30):
         comm.sendData(np.arange(0,5) + t*0.5)
 
-        # rcvData = comm.rcvData()
         if (comm.checkNewData()):
             rcvData= comm.getData()
             print(t, ": ", rcvData)
@@ -183,10 +182,9 @@ def testClient():
     while(t<5):
         comm.sendData(np.array([t,t*0.5]))
 
-        # rcvData= comm.rcvData()
         if (comm.checkNewData()):
             rcvData= comm.getData()
-            print(t, ": Receiving ", rcvData)
+            print(t, ": ", rcvData)
 
         time.sleep(0.5)
         t+=0.5
