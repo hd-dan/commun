@@ -188,3 +188,22 @@ void commun::stopRcv(){
 bool commun::checkNewData(){
     return fnewData_;
 }
+
+bool commun::checkConnection(){
+    if (!fhvClient_){
+        return 0;
+    }
+    const char* checkStr= "0";
+    int n= send(clientfd_,checkStr,strlen(checkStr),MSG_NOSIGNAL);
+    if (fisServer_ && n<0){
+        printf("Client Closed Connection\n");
+        fhvClient_=false;
+        threadRcvData_.interrupt();
+        return 0;
+    }
+    if (n<0){
+        printf("Server Closed Connection\n");
+        exit(1);
+    }
+    return 1;
+}

@@ -1,17 +1,13 @@
 #include <iostream>
-
-#include "commun.h"
 #include <chrono>
 
+#include "commun.h"
 #include "serialcom.h"
-
-#include "../ur_robot/ur/joystick.h"
-#include "../ur_robot/ur/util.hpp"
 
 
 void runClient(){
-//    std::string ip("127.0.0.1");
-    std::string ip("192.168.0.99");
+    std::string ip("127.0.0.1");
+//    std::string ip("192.168.0.99");
     int port= 8888;
     commun client(ip,port,false);
 
@@ -55,7 +51,7 @@ void runServer(){
     t0= std::chrono::high_resolution_clock::now();
     double t=0;
 
-    while(t<10){
+    while(t<30){
         t1= std::chrono::high_resolution_clock::now();
         t=std::chrono::duration_cast<std::chrono::duration<double> >(t1-t0).count();
 
@@ -68,6 +64,7 @@ void runServer(){
             printf("\n");
         }
         server.sendData(dummy);
+        server.checkConnection();
 
         usleep(1e4);
     }
@@ -114,12 +111,29 @@ void runSerialSend(){
     }
 }
 
+void runPi(){
+    commun pi("192.168.1.99",8888,0);
+    std::vector<double> rcv;
+
+    std::vector<double> cmdTest(5,-1);
+    cmdTest.at(0)= 1;
+    pi.sendData(cmdTest);
+//    while(1){
+//        if (pi.checkNewData()){
+//            rcv= pi.getData();
+//            print_vector("rcv",rcv);
+//        }
+//    }
+    return;
+}
 
 int main(){
     std::cout << "Hello World!" << std::endl;
 
-    runServer();
-//    runClient();
+//    runServer();
+    runClient();
+
+//    runPi();
 
     return 0;
 }
