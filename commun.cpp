@@ -94,7 +94,9 @@ std::vector<double> commun::processRcvStr(){
     unsigned int i=0;
     for (;i<rcvStrBuff_.size();i++){
         if (rcvStrBuff_.at(i)==','){
-            parseVect.push_back( std::stod(parseStr) );
+            try{
+                parseVect.push_back( std::stod(parseStr) );
+            }catch(...){}
             parseStr= "";
         }else if (rcvStrBuff_.at(i)=='\n'){
             i++;
@@ -103,7 +105,11 @@ std::vector<double> commun::processRcvStr(){
             parseStr+=rcvStrBuff_.at(i);
         }
     }
-    rcvStrBuff_= rcvStrBuff_.substr(i,rcvStrBuff_.size());
+    if (rcvStrBuff_.size()>=i){
+        rcvStrBuff_= rcvStrBuff_.substr(i,rcvStrBuff_.size());
+    }else{
+        rcvStrBuff_="";
+    }
     rcvVect_= parseVect;
     fnewData_= true;
     return rcvVect_;
@@ -166,6 +172,7 @@ int commun::sendData(std::vector<double> sendData){
         printf("Client Closed Connection\n");
         fhvClient_=false;
         threadRcvData_.interrupt();
+        rcvStrBuff_="";
         return -1;
     }
     if (n<0){
@@ -199,6 +206,7 @@ bool commun::checkConnection(){
         printf("Client Closed Connection\n");
         fhvClient_=false;
         threadRcvData_.interrupt();
+        rcvStrBuff_="";
         return 0;
     }
     if (n<0){

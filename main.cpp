@@ -5,9 +5,11 @@
 #include "serialcom.h"
 
 
+
 void runClient(){
-    std::string ip("127.0.0.1");
+//    std::string ip("127.0.0.1");
 //    std::string ip("192.168.0.99");
+    std::string ip("10.42.0.1");
     int port= 8888;
     commun client(ip,port,false);
 
@@ -28,10 +30,10 @@ void runClient(){
             }
             printf("\n");
         }
-        client.sendData(std::vector<double>(1,ii));
-        ii+=1;
-        ii= (ii>255)?0:ii;
 
+        client.sendData(std::vector<double> (2,ii));
+        ii++;
+        ii=ii>255?0:ii;
         usleep(1e4);
     }
     client.stopRcv();
@@ -39,7 +41,8 @@ void runClient(){
 
 
 void runServer(){
-    std::string ip("127.0.0.1");
+//    std::string ip("127.0.0.1");
+    std::string ip("10.42.0.1");
 //    std::string ip("192.168.0.99");
     int port= 8888;
     commun server(ip,port,true);
@@ -112,18 +115,32 @@ void runSerialSend(){
 }
 
 void runPi(){
-    commun pi("192.168.1.99",8888,0);
+    std::string ip("10.42.0.80");
+//    std::string ip("192.168.1.99");
+    commun pi(ip,8888,0);
     std::vector<double> rcv;
 
-    std::vector<double> cmdTest(5,-1);
-    cmdTest.at(0)= 1;
-    pi.sendData(cmdTest);
-//    while(1){
-//        if (pi.checkNewData()){
-//            rcv= pi.getData();
-//            print_vector("rcv",rcv);
-//        }
-//    }
+    std::vector<double> cmdTest= {1,0}; //{ena, dir}
+//    cmdTest.at(0)= 1;
+    while(1){
+        if (pi.checkNewData()){
+            rcv= pi.getData();
+
+            for (unsigned int i=0;i<rcv.size();i++){
+                printf("%.3f, ",rcv.at(i));
+            }
+            printf("\n");
+        }
+        double ena,dir;
+        printf("ena: ");
+        std::cin>>ena;
+        printf("dir:");
+        std::cin>>dir;
+        cmdTest= {ena,dir};
+
+        pi.sendData(cmdTest);
+        usleep(1e4);
+    }
     return;
 }
 
@@ -131,9 +148,9 @@ int main(){
     std::cout << "Hello World!" << std::endl;
 
 //    runServer();
-    runClient();
+//    runClient();
 
-//    runPi();
+    runPi();
 
     return 0;
 }
