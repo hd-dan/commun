@@ -4,7 +4,7 @@
 #include "commun.h"
 #include "serialcom.h"
 
-
+#include "../util/joystick.h"
 
 void runClient(){
 //    std::string ip("127.0.0.1");
@@ -115,14 +115,21 @@ void runSerialSend(){
 }
 
 void runPi(){
-    std::string ip("10.42.0.80");
-//    std::string ip("192.168.1.99");
+//    std::string ip("10.42.0.80");
+    std::string ip("192.168.1.10");
     commun pi(ip,8888,0);
     std::vector<double> rcv;
 
-    std::vector<double> cmdTest= {1,0}; //{ena, dir}
-//    cmdTest.at(0)= 1;
-    while(1){
+    joystick js(0);
+    boost::thread js_loop(&joystick::loopReadJs,&js);
+    js_state state;
+
+
+    std::vector<double> cmd= {1,0}; //{ena, dir}
+    std::vector<double> stopCmd(5,-99);
+    do{
+        state= js.getState();
+
         if (pi.checkNewData()){
             rcv= pi.getData();
 
@@ -131,17 +138,31 @@ void runPi(){
             }
             printf("\n");
         }
-        double ena,dir;
-        printf("ena: ");
-        std::cin>>ena;
-        printf("dir:");
-        std::cin>>dir;
-        cmdTest= {ena,dir};
 
-        pi.sendData(cmdTest);
+        double enaCmd=-1, dirCmd=-1;
+        if (state.button.at(0))
+            enaCmd=1;
+        else if (state.button.at(1))
+            enaCmd=0;
+        else
+            enaCmd=-1;
+
+        if (state.button.at(4))
+            dirCmd=1;
+        else if (state.button.at(5))
+            dirCmd=0;
+        else
+            dirCmd=-1;
+
+        printf("cmd: {%.1f, %.1f}\n",enaCmd, dirCmd);
+        cmd= {enaCmd, dirCmd};
+
+        pi.sendData(cmd);
         usleep(1e4);
-    }
-    return;
+
+    }while(state.button.at(6)!=1);
+    pi.sendData(stopCmd);
+    pi.closeSock();
 }
 
 int main(){
@@ -150,7 +171,11 @@ int main(){
 //    runServer();
 //    runClient();
 
-    runPi();
+//    runPi();
+    while(1){
+        printf(".");
+        usleep(5e6);
+    }
 
     return 0;
 }

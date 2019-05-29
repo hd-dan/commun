@@ -196,7 +196,7 @@ bool commun::checkNewData(){
     return fnewData_;
 }
 
-bool commun::checkConnection(){
+bool commun::testConnection(){
     if (!fhvClient_){
         return 0;
     }
@@ -214,4 +214,8 @@ bool commun::checkConnection(){
         exit(1);
     }
     return 1;
+}
+
+bool commun::checkConnection(){
+    return fhvClient_;
 }
