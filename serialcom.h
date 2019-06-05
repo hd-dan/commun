@@ -33,7 +33,6 @@ public:
     ~serialCom();
 
     void rcvData();
-    void rcvDataThread();
     std::vector<double> getData();
 
     int sendData(std::vector<double> data);

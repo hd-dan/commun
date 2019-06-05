@@ -51,8 +51,11 @@ void commun::closeSock(){
     fstopClientBind_= true;
 
     threadRcvData_.interrupt();
+    threadRcvData_.join();
     threadMonitorTimeout_.interrupt();
+    threadMonitorTimeout_.join();
     threadWaitClientBind_.interrupt();
+    threadWaitClientBind_.join();
 
     close(clientfd_);
     close(serverfd_);
@@ -80,6 +83,7 @@ void commun::waitClientLoop(){
         if (!fhvClient_)
             commun::waitForClient();
         usleep(1e5);
+        boost::this_thread::interruption_point();
     }
 }
 
@@ -127,6 +131,7 @@ void commun::rcvData(){
                 commun::processRcvStr();
             }
         }
+        boost::this_thread::interruption_point();
     }
 }
 

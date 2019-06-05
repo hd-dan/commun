@@ -6,16 +6,17 @@ serialCom::serialCom(std::string usbPort):
     if (usbfd_<0){
         printf("Failed to open usbPort: %s\n",usbPort_.c_str());
     }
-    serialCom::rcvDataThread();
+    threadRcvData_= boost::thread(&serialCom::rcvData,this);
 }
 
 serialCom::~serialCom(){
     fstopRcv_= true;
+    threadRcvData_.interrupt();
     threadRcvData_.join();
-    if (!threadRcvData_.timed_join(boost::posix_time::time_duration(0,0,1,0))){
-      threadRcvData_.interrupt();
-      threadRcvData_.timed_join(boost::posix_time::time_duration(0,0,1,0));
-    }
+//    if (!threadRcvData_.timed_join(boost::posix_time::time_duration(0,0,1,0))){
+//      threadRcvData_.interrupt();
+//      threadRcvData_.timed_join(boost::posix_time::time_duration(0,0,1,0));
+//    }
     close(usbfd_);
 }
 
@@ -49,12 +50,10 @@ void serialCom::rcvData(){
                 serialCom::processRcvStr();
             }
         }
+        boost::this_thread::interruption_point();
     }
 }
 
-void serialCom::rcvDataThread(){
-    threadRcvData_= boost::thread(&serialCom::rcvData,this);
-}
 
 std::vector<double> serialCom::getData(){
     return rcvVect_;
