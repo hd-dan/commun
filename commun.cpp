@@ -55,7 +55,8 @@ void commun::closeSock(){
     threadMonitorTimeout_.interrupt();
     threadMonitorTimeout_.join();
     threadWaitClientBind_.interrupt();
-    threadWaitClientBind_.join();
+//    threadWaitClientBind_.join();
+    pthread_cancel(threadWaitClientBind_.native_handle());
 
     close(clientfd_);
     close(serverfd_);

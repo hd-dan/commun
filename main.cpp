@@ -7,9 +7,8 @@
 #include "../util/joystick.h"
 
 void runClient(){
-//    std::string ip("127.0.0.1");
+    std::string ip("127.0.0.1");
 //    std::string ip("192.168.0.99");
-    std::string ip("10.42.0.1");
     int port= 8888;
     commun client(ip,port,false);
 
@@ -41,20 +40,21 @@ void runClient(){
 
 
 void runServer(){
-//    std::string ip("127.0.0.1");
-    std::string ip("10.42.0.1");
+    std::string ip("127.0.0.1");
 //    std::string ip("192.168.0.99");
     int port= 8888;
     commun server(ip,port,true);
 
     std::vector<double> dummy= {1,2.5,-2.2,1.0002};
+    printf("haha\n");
 
     std::vector<double> data;
     std::chrono::high_resolution_clock::time_point t0,t1;
     t0= std::chrono::high_resolution_clock::now();
     double t=0;
 
-    while(t<30){
+    printf("testing\n");
+    while(t<5){
         t1= std::chrono::high_resolution_clock::now();
         t=std::chrono::duration_cast<std::chrono::duration<double> >(t1-t0).count();
 
@@ -69,10 +69,11 @@ void runServer(){
         server.sendData(dummy);
         server.checkConnection();
 
+        printf("looping.. %.3f\n",t);
         usleep(1e4);
     }
-    server.stopRcv();
-    server.closeSock();
+//    server.stopRcv();
+//    server.closeSock();
 }
 
 void runSerialRcv(){
@@ -93,89 +94,12 @@ void runSerialRcv(){
     }
 }
 
-void runSerialSend(){
-    serialCom serial("/dev/ttyACM0");
-    boost::thread tRcv(&serialCom::rcvDataThread,&serial);
-
-    double t=0;
-    std::vector<double> sendData= {1,0};
-    serial.sendData(sendData);
-    usleep(100e3);
-
-    std::vector<double> rcvData;
-    while(t<0.5){
-
-        rcvData= serial.getData();
-        for(unsigned int i=0;i<rcvData.size();i++){
-            printf("%.3f,",rcvData.at(i));
-        }
-        usleep(1e3);
-        t+=1e-3;
-    }
-}
-
-void runPi(){
-//    std::string ip("10.42.0.80");
-    std::string ip("192.168.1.10");
-    commun pi(ip,8888,0);
-    std::vector<double> rcv;
-
-    joystick js(0);
-    boost::thread js_loop(&joystick::loopReadJs,&js);
-    js_state state;
-
-
-    std::vector<double> cmd= {1,0}; //{ena, dir}
-    std::vector<double> stopCmd(5,-99);
-    do{
-        state= js.getState();
-
-        if (pi.checkNewData()){
-            rcv= pi.getData();
-
-            for (unsigned int i=0;i<rcv.size();i++){
-                printf("%.3f, ",rcv.at(i));
-            }
-            printf("\n");
-        }
-
-        double enaCmd=-1, dirCmd=-1;
-        if (state.button.at(0))
-            enaCmd=1;
-        else if (state.button.at(1))
-            enaCmd=0;
-        else
-            enaCmd=-1;
-
-        if (state.button.at(4))
-            dirCmd=1;
-        else if (state.button.at(5))
-            dirCmd=0;
-        else
-            dirCmd=-1;
-
-        printf("cmd: {%.1f, %.1f}\n",enaCmd, dirCmd);
-        cmd= {enaCmd, dirCmd};
-
-        pi.sendData(cmd);
-        usleep(1e4);
-
-    }while(state.button.at(6)!=1);
-    pi.sendData(stopCmd);
-    pi.closeSock();
-}
 
 int main(){
     std::cout << "Hello World!" << std::endl;
 
-//    runServer();
+    runServer();
 //    runClient();
-
-//    runPi();
-    while(1){
-        printf(".");
-        usleep(5e6);
-    }
 
     return 0;
 }
