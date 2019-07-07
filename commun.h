@@ -32,36 +32,40 @@ private:
     bool fnewData_;
     bool fstopClientBind_;
 
+    bool fthread_;
+    bool fhvServer_;
+    bool fstopServerWait_;
+
     std::string rcvStrBuff_;
     std::vector<double> rcvVect_;
 
     boost::thread threadRcvData_;
     boost::thread threadMonitorTimeout_;
     boost::thread threadWaitClientBind_;
+    boost::thread threadWaitServer_;
     void monitorRcvTimeout();
 
     std::vector<double> processRcvStr();
     std::string processSendVect(std::vector<double> sendData);
 
     void waitClientLoop();
+    void waitServerConnection();
 
     std::chrono::high_resolution_clock::time_point dataRcvTime_;
     double timeout_;
 
 public:
-    commun(std::string ip, int port, bool isServer);
+    commun(std::string ip, int port, bool isServer, bool fthread=0);
     ~commun();
     void closeSock();
 
     int waitForClient();
-    void waitClientBindThread();
 
     void rcvData();
-    void rcvDataThread();
     void rcvDataThread(double timeout);
     std::vector<double> getData();
 
-    int sendData(std::vector<double> data);
+    long sendData(std::vector<double> data);
     bool testConnection();
     bool checkConnection();
 

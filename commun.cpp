@@ -1,12 +1,12 @@
 #include "commun.h"
 
-commun::commun(std::string ip, int port, bool isServer):
+commun::commun(std::string ip, int port, bool isServer, bool fthread):
     ip_(ip),port_(port),buffSize_(6000),
     fisServer_(isServer),fhvClient_(false),fstopRcv_(false),fnewData_(false),
-    fstopClientBind_(false){
+    fstopClientBind_(false), fthread_(fthread),fhvServer_(0),fstopServerWait_(0){
 
     server_.sin_family= AF_INET;
-    server_.sin_port= htons(port_);
+    server_.sin_port= htons(static_cast<unsigned short>(port_));
 
     serverfd_= socket(AF_INET,SOCK_STREAM,0);
     if (serverfd_<0){
@@ -18,10 +18,17 @@ commun::commun(std::string ip, int port, bool isServer):
         if(inet_pton(AF_INET, ip_.c_str(), &server_.sin_addr)<=0){
             printf("Invalid address\n"); exit(1);
         }
-        if(connect(clientfd_,(struct sockaddr *)&server_,sizeof(server_))<0){
-            printf("connection failed: %s\n",ip_.c_str()); exit(1);
+
+        if (fthread_){
+            if(connect(clientfd_,(struct sockaddr *)&server_,sizeof(server_))<0){
+                printf("connection failed: %s\n",ip_.c_str());
+                exit(1);
+            }
+            fhvServer_=1;
+            threadRcvData_= boost::thread(&commun::rcvData,this);
+        }else{
+            threadWaitServer_= boost::thread(&commun::waitServerConnection,this);
         }
-        commun::rcvDataThread();
     }
 
     if (fisServer_){
@@ -38,7 +45,7 @@ commun::commun(std::string ip, int port, bool isServer):
         listen(serverfd_,5);
         clientLen_= sizeof(client_);
 
-        commun::waitClientBindThread();
+        threadWaitClientBind_= boost::thread(&commun::waitClientLoop,this);
     }
 }
 
@@ -49,14 +56,16 @@ commun::~commun(){
 void commun::closeSock(){
     fstopRcv_= true;
     fstopClientBind_= true;
+    fstopServerWait_= true;
 
     threadRcvData_.interrupt();
     threadRcvData_.join();
     threadMonitorTimeout_.interrupt();
     threadMonitorTimeout_.join();
     threadWaitClientBind_.interrupt();
-//    threadWaitClientBind_.join();
     pthread_cancel(threadWaitClientBind_.native_handle());
+    threadWaitServer_.interrupt();
+    threadWaitServer_.join();
 
     close(clientfd_);
     close(serverfd_);
@@ -74,7 +83,7 @@ int commun::waitForClient(){
         printf("Error on accept\n"); return -1;
     }
     fhvClient_=true;
-    commun::rcvDataThread();
+    threadRcvData_= boost::thread(&commun::rcvData,this);
 
     return clientfd_;
 }
@@ -88,9 +97,16 @@ void commun::waitClientLoop(){
     }
 }
 
-void commun::waitClientBindThread(){
-    threadWaitClientBind_= boost::thread(&commun::waitClientLoop,this);
+void commun::waitServerConnection(){
+    while(connect(clientfd_,(struct sockaddr *)&server_,sizeof(server_))<0
+          && !fstopServerWait_){
+        usleep(1e5);
+        boost::this_thread::interruption_point();
+    }
+    fhvServer_=1;
+    threadRcvData_= boost::thread(&commun::rcvData,this);
 }
+
 
 std::vector<double> commun::processRcvStr(){
     std::vector<double> parseVect;
@@ -123,7 +139,7 @@ std::vector<double> commun::processRcvStr(){
 void commun::rcvData(){
     while (!fstopRcv_){
         char buff[buffSize_];
-        int n= read(clientfd_,buff,buffSize_);
+        long n= read(clientfd_,buff,static_cast<unsigned long>(buffSize_));
         dataRcvTime_= std::chrono::high_resolution_clock::now();
         for (int i=0;i<n;i++){
             if (buff[i]!='\n'){
@@ -134,10 +150,6 @@ void commun::rcvData(){
         }
         boost::this_thread::interruption_point();
     }
-}
-
-void commun::rcvDataThread(){
-    threadRcvData_= boost::thread(&commun::rcvData,this);
 }
 
 void commun::monitorRcvTimeout(){
@@ -167,13 +179,15 @@ std::string commun::processSendVect(std::vector<double> sendData){
     return sendStrBuff;
 }
 
-int commun::sendData(std::vector<double> sendData){
-    if (fisServer_ && !fhvClient_){
+long commun::sendData(std::vector<double> sendData){
+    if (fisServer_ && !fhvClient_)
         return -1;
-    }
+    if (!fisServer_ && !fhvServer_)
+        return -1;
+
     std::string sendStr= commun::processSendVect(sendData);
     const char* sendStrBuff= sendStr.c_str();
-    int n= send(clientfd_,sendStrBuff,strlen(sendStrBuff),MSG_NOSIGNAL);
+    long n= send(clientfd_,sendStrBuff,strlen(sendStrBuff),MSG_NOSIGNAL);
     if (fisServer_ && n<0){
         printf("Client Closed Connection\n");
         fhvClient_=false;
@@ -207,7 +221,7 @@ bool commun::testConnection(){
         return 0;
     }
     const char* checkStr= "0";
-    int n= send(clientfd_,checkStr,strlen(checkStr),MSG_NOSIGNAL);
+    long n= send(clientfd_,checkStr,strlen(checkStr),MSG_NOSIGNAL);
     if (fisServer_ && n<0){
         printf("Client Closed Connection\n");
         fhvClient_=false;
@@ -223,5 +237,8 @@ bool commun::testConnection(){
 }
 
 bool commun::checkConnection(){
-    return fhvClient_;
+    if (fisServer_)
+        return fhvClient_;
+    else
+        return fhvServer_;
 }
