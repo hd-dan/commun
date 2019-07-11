@@ -19,7 +19,7 @@ commun::commun(std::string ip, int port, bool isServer, bool fthread):
             printf("Invalid address\n"); exit(1);
         }
 
-        if (fthread_){
+        if (!fthread_){
             if(connect(clientfd_,(struct sockaddr *)&server_,sizeof(server_))<0){
                 printf("connection failed: %s\n",ip_.c_str());
                 exit(1);
@@ -45,6 +45,9 @@ commun::commun(std::string ip, int port, bool isServer, bool fthread):
         listen(serverfd_,5);
         clientLen_= sizeof(client_);
 
+        if(!fthread_){
+            commun::waitForClient();
+        }
         threadWaitClientBind_= boost::thread(&commun::waitClientLoop,this);
     }
 }
