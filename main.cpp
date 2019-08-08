@@ -78,6 +78,7 @@ void runServer(){
 
 void runSerialRcv(){
     serialCom serial("/dev/ttyACM0");
+    serial.setDelimiter(' ');
 
     double t=0;
     std::vector<double> rcvData;
@@ -98,8 +99,10 @@ void runSerialRcv(){
 int main(int argc, char * argv[]){
     std::cout << "Hello World!" << std::endl;
 
-    runServer();
+//    runServer();
 //    runClient();
+
+    runSerialRcv();
 
     return 0;
 }

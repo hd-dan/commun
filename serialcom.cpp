@@ -1,11 +1,13 @@
 #include "serialcom.h"
 
 serialCom::serialCom(std::string usbPort):
-    usbPort_(usbPort),buffSize_(6000),fstopRcv_(false),fnewData_(false){
+                        usbPort_(usbPort),buffSize_(6000),fstopRcv_(false),
+                        fnewData_(false), delimiter_(','){
     usbfd_= open(usbPort_.c_str(), O_RDWR | O_NOCTTY);
     if (usbfd_<0){
         printf("Failed to open usbPort: %s\n",usbPort_.c_str());
     }
+    rcvStr_= "haha";
     threadRcvData_= boost::thread(&serialCom::rcvData,this);
 }
 
@@ -22,6 +24,9 @@ serialCom::~serialCom(){
 
 
 std::vector<double> serialCom::processRcvStr(){
+    if (rcvStrBuff_.size()==0)
+        return rcvVect_;
+
     std::vector<double> parseVect;
     std::stringstream parseBuff(rcvStrBuff_);
     while(parseBuff.good()){
@@ -47,23 +52,34 @@ void serialCom::rcvData(){
             if (buff[i]!='\n'){
                 rcvStrBuff_+=buff[i];
             }else{
+                rcvStr_= rcvStrBuff_;
                 serialCom::processRcvStr();
             }
         }
+        usleep(1e3);
         boost::this_thread::interruption_point();
     }
 }
 
+bool serialCom::checkNewData(){
+    return fnewData_;
+}
 
 std::vector<double> serialCom::getData(){
+    fnewData_=false;
     return rcvVect_;
+}
+
+std::string serialCom::getRcvStr(){
+    fnewData_=false;
+    return rcvStr_;
 }
 
 
 std::string serialCom::processSendVect(std::vector<double> sendData){
     std::string sendStrBuff;
     for (unsigned int i=0;i<sendData.size();i++){
-        sendStrBuff+= std::to_string(sendData.at(i)) + ",";
+        sendStrBuff+= std::to_string(sendData.at(i)) + delimiter_;
     }
     sendStrBuff+= "\n";
     return sendStrBuff;
@@ -76,4 +92,9 @@ int serialCom::sendData(std::vector<double> sendData){
     if (n<0)
         printf("Error Writing to Socket\n");
     return n;
+}
+
+void serialCom::setDelimiter(char delimiter){
+    delimiter_= delimiter;
+    return;
 }
