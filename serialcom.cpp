@@ -44,7 +44,7 @@ std::vector<double> serialCom::processRcvStr(){
     std::stringstream parseBuff(rcvStrBuff_);
     while(parseBuff.good()){
         std::string parseStr;
-        std::getline(parseBuff,parseStr,',');
+        std::getline(parseBuff,parseStr, delimiter_);
         parseStrVect.push_back(parseStr);
         parseVect.push_back(std::atof(parseStr.c_str()));
     }
