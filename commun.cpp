@@ -1,9 +1,27 @@
 #include "commun.h"
 
+commun::commun():buffSize_(6000),fhvClient_(false),fstopRcv_(false),
+    fnewData_(false),fstopClientBind_(false),fhvServer_(0),fstopServerWait_(0){
+
+}
+
 commun::commun(std::string ip, int port, bool isServer, bool fthread):
     ip_(ip),port_(port),buffSize_(6000),
     fisServer_(isServer),fhvClient_(false),fstopRcv_(false),fnewData_(false),
     fstopClientBind_(false), fthread_(fthread),fhvServer_(0),fstopServerWait_(0){
+
+    commun::setup(ip, port,isServer,fthread);
+}
+
+commun::~commun(){
+    commun::closeSock();
+}
+
+void commun::setup(std::string ip, int port, bool isServer, bool fthread){
+    ip_= ip;
+    port_= port;
+    fisServer_= isServer;
+    fthread_= fthread;
 
     server_.sin_family= AF_INET;
     server_.sin_port= htons(static_cast<unsigned short>(port_));
@@ -50,10 +68,6 @@ commun::commun(std::string ip, int port, bool isServer, bool fthread):
         }
         threadWaitClientBind_= boost::thread(&commun::waitClientLoop,this);
     }
-}
-
-commun::~commun(){
-    commun::closeSock();
 }
 
 void commun::closeSock(){

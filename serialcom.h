@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <boost/thread.hpp>
+#include <mutex>
 
 //#include <stdio.h>
 //#include <unistd.h>
@@ -21,7 +22,7 @@ private:
     bool fnewData_;
 
     std::string rcvStrBuff_;
-    std::string rcvStr_;
+    std::vector<std::string> rcvStr_;
     std::vector<double> rcvVect_;
 
     boost::thread threadRcvData_;
@@ -30,14 +31,19 @@ private:
     std::vector<double> processRcvStr();
     std::string processSendVect(std::vector<double> sendData);
 
+    std::mutex mtxRcv_;
+
 public:
+    serialCom();
     serialCom(std::string usbPort);
     ~serialCom();
+    void setup(std::string usbPort);
+    void closeUsb();
 
     void rcvData();
     bool checkNewData();
     std::vector<double> getData();
-    std::string getRcvStr();
+    std::vector<std::string> getRcvStr();
 
     int sendData(std::vector<double> data);
     void setDelimiter(char delimiter);

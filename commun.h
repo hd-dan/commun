@@ -55,8 +55,10 @@ private:
     double timeout_;
 
 public:
+    commun();
     commun(std::string ip, int port, bool isServer, bool fthread=0);
     ~commun();
+    void setup(std::string ip, int port, bool isServer, bool fthread=0);
     void closeSock();
 
     int waitForClient();

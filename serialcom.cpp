@@ -1,17 +1,30 @@
 #include "serialcom.h"
 
+
+serialCom::serialCom():buffSize_(6000),fstopRcv_(false),
+                        fnewData_(false),delimiter_(','){
+
+}
 serialCom::serialCom(std::string usbPort):
                         usbPort_(usbPort),buffSize_(6000),fstopRcv_(false),
                         fnewData_(false), delimiter_(','){
+    serialCom::setup(usbPort);
+}
+
+serialCom::~serialCom(){
+    serialCom::closeUsb();
+}
+
+void serialCom::setup(std::string usbPort){
+    usbPort_= usbPort;
     usbfd_= open(usbPort_.c_str(), O_RDWR | O_NOCTTY);
     if (usbfd_<0){
         printf("Failed to open usbPort: %s\n",usbPort_.c_str());
     }
-    rcvStr_= "haha";
     threadRcvData_= boost::thread(&serialCom::rcvData,this);
 }
 
-serialCom::~serialCom(){
+void serialCom::closeUsb(){
     fstopRcv_= true;
     threadRcvData_.interrupt();
     threadRcvData_.join();
@@ -22,21 +35,24 @@ serialCom::~serialCom(){
     close(usbfd_);
 }
 
-
 std::vector<double> serialCom::processRcvStr(){
     if (rcvStrBuff_.size()==0)
         return rcvVect_;
 
+    std::vector<std::string> parseStrVect;
     std::vector<double> parseVect;
     std::stringstream parseBuff(rcvStrBuff_);
     while(parseBuff.good()){
         std::string parseStr;
         std::getline(parseBuff,parseStr,',');
+        parseStrVect.push_back(parseStr);
         parseVect.push_back(std::atof(parseStr.c_str()));
     }
     rcvStrBuff_= "";
 
     if (parseVect.size()>0){
+        std::lock_guard<std::mutex> rcvLock(mtxRcv_);
+        rcvStr_= parseStrVect;
         rcvVect_= parseVect;
     }
     fnewData_= true;
@@ -52,11 +68,9 @@ void serialCom::rcvData(){
             if (buff[i]!='\n'){
                 rcvStrBuff_+=buff[i];
             }else{
-                rcvStr_= rcvStrBuff_;
                 serialCom::processRcvStr();
             }
         }
-        usleep(1e3);
         boost::this_thread::interruption_point();
     }
 }
@@ -66,11 +80,13 @@ bool serialCom::checkNewData(){
 }
 
 std::vector<double> serialCom::getData(){
+    std::lock_guard<std::mutex> rcvLock(mtxRcv_);
     fnewData_=false;
     return rcvVect_;
 }
 
-std::string serialCom::getRcvStr(){
+std::vector<std::string> serialCom::getRcvStr(){
+    std::lock_guard<std::mutex> rcvLock(mtxRcv_);
     fnewData_=false;
     return rcvStr_;
 }

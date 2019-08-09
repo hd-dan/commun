@@ -82,14 +82,21 @@ void runSerialRcv(){
 
     double t=0;
     std::vector<double> rcvData;
+    std::vector<std::string> rcvStr;
     while(t<10){
 
-        rcvData= serial.getData();
-        for(unsigned int i=0;i<rcvData.size();i++){
-            printf("%.3f,",rcvData.at(i));
-        }
-        if (rcvData.size()>0)
+        if (serial.checkNewData()){
+//            rcvData= serial.getData();
+//            for(unsigned int i=0;i<rcvData.size();i++){
+//                printf("%.3f,",rcvData.at(i));
+//            }
+            rcvStr= serial.getRcvStr();
+            for(unsigned int i=0;i<rcvStr.size();i++){
+                printf("%s,",rcvStr.at(i).c_str());
+            }
             printf("\n");
+        }
+
         usleep(1e3);
         t+=1e-3;
     }
