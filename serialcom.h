@@ -18,6 +18,7 @@ private:
     int usbfd_;
     const int buffSize_;
 
+    bool fsetup_;
     bool fstopRcv_;
     bool fnewData_;
 
@@ -37,7 +38,7 @@ public:
     serialCom();
     serialCom(std::string usbPort);
     ~serialCom();
-    void setup(std::string usbPort);
+    void setupUsb(std::string usbPort);
     void closeUsb();
 
     void rcvData();

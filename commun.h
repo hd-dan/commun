@@ -26,6 +26,7 @@ private:
     struct sockaddr_in client_;
     socklen_t clientLen_;
 
+    bool fsetup_;
     bool fisServer_;
     bool fhvClient_;
     bool fstopRcv_;

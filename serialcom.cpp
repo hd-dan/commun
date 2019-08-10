@@ -1,30 +1,36 @@
 #include "serialcom.h"
 
 
-serialCom::serialCom():buffSize_(6000),fstopRcv_(false),
+serialCom::serialCom():buffSize_(6000),fsetup_(false),fstopRcv_(false),
                         fnewData_(false),delimiter_(','){
 
 }
 serialCom::serialCom(std::string usbPort):
-                        usbPort_(usbPort),buffSize_(6000),fstopRcv_(false),
-                        fnewData_(false), delimiter_(','){
-    serialCom::setup(usbPort);
+                        usbPort_(usbPort),buffSize_(6000),fsetup_(false),
+                        fstopRcv_(false),fnewData_(false), delimiter_(','){
+    serialCom::setupUsb(usbPort);
 }
 
 serialCom::~serialCom(){
     serialCom::closeUsb();
 }
 
-void serialCom::setup(std::string usbPort){
+void serialCom::setupUsb(std::string usbPort){
+    if (fsetup_)
+        return;
+
     usbPort_= usbPort;
     usbfd_= open(usbPort_.c_str(), O_RDWR | O_NOCTTY);
     if (usbfd_<0){
         printf("Failed to open usbPort: %s\n",usbPort_.c_str());
     }
     threadRcvData_= boost::thread(&serialCom::rcvData,this);
+    fsetup_=true;
+    return;
 }
 
 void serialCom::closeUsb(){
+    fsetup_= false;
     fstopRcv_= true;
     threadRcvData_.interrupt();
     threadRcvData_.join();

@@ -1,6 +1,6 @@
 #include "commun.h"
 
-commun::commun():buffSize_(6000),fhvClient_(false),fstopRcv_(false),
+commun::commun():buffSize_(6000),fsetup_(false),fhvClient_(false),fstopRcv_(false),
     fnewData_(false),fstopClientBind_(false),fhvServer_(0),fstopServerWait_(0){
 
 }
@@ -18,6 +18,10 @@ commun::~commun(){
 }
 
 void commun::setup(std::string ip, int port, bool isServer, bool fthread){
+    if (fsetup_)
+        return;
+
+    fsetup_= true;
     ip_= ip;
     port_= port;
     fisServer_= isServer;
@@ -71,6 +75,7 @@ void commun::setup(std::string ip, int port, bool isServer, bool fthread){
 }
 
 void commun::closeSock(){
+    fsetup_= false;
     fstopRcv_= true;
     fstopClientBind_= true;
     fstopServerWait_= true;
