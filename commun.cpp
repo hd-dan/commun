@@ -209,7 +209,7 @@ long commun::sendData(std::vector<double> sendData){
 
     std::string sendStr= commun::processSendVect(sendData);
     const char* sendStrBuff= sendStr.c_str();
-    long n= send(clientfd_,sendStrBuff,strlen(sendStrBuff),MSG_NOSIGNAL);
+    long n= send(clientfd_,sendStrBuff,strlen(sendStrBuff),SEND_NOSIGNAL);
     if (fisServer_ && n<0){
         printf("Client Closed Connection\n");
         fhvClient_=false;
@@ -243,7 +243,7 @@ bool commun::testConnection(){
         return 0;
     }
     const char* checkStr= "0";
-    long n= send(clientfd_,checkStr,strlen(checkStr),MSG_NOSIGNAL);
+    long n= send(clientfd_,checkStr,strlen(checkStr),SEND_NOSIGNAL);
     if (fisServer_ && n<0){
         printf("Client Closed Connection\n");
         fhvClient_=false;

@@ -20,7 +20,7 @@ void serialCom::setupUsb(std::string usbPort){
         return;
 
     usbPort_= usbPort;
-    usbfd_= open(usbPort_.c_str(), O_RDWR | O_NOCTTY);
+    usbfd_= open(usbPort_.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
     if (usbfd_<0){
         printf("Failed to open usbPort: %s\n",usbPort_.c_str());
     }

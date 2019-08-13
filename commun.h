@@ -13,6 +13,12 @@
 #include <boost/thread.hpp>
 #include <chrono>
 
+#ifdef __APPLE__
+#define SEND_NOSIGNAL 0
+#else
+#define SEND_NOSIGNAL MSG_NOSIGNAL
+#endif
+
 class commun{
 private:
 

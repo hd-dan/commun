@@ -4,7 +4,7 @@
 #include "commun.h"
 #include "serialcom.h"
 
-#include "../util/joystick.h"
+//#include "../util/joystick.h"
 
 void runClient(){
     std::string ip("127.0.0.1");
@@ -77,7 +77,9 @@ void runServer(){
 }
 
 void runSerialRcv(){
-    serialCom serial("/dev/ttyACM0");
+//    serialCom serial("/dev/ttyACM0");
+    serialCom serial("/dev/tty.usbmodem14101");
+
     serial.setDelimiter(' ');
 
     double t=0;
