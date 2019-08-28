@@ -17,6 +17,10 @@ commun::~commun(){
     commun::closeSock();
 }
 
+void commun::setup(){
+    return commun::setup(ip_,port_,fisServer_,fthread_);
+}
+
 void commun::setup(std::string ip, int port, bool isServer,
                         bool fthread){
     if (fsetup_)
