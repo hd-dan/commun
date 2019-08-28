@@ -5,7 +5,7 @@ commun::commun():buffSize_(6000),fsetup_(false),fhvClient_(false),fstopRcv_(fals
 
 }
 
-commun::commun(std::string ip, int port, bool isServer, bool fthread):
+commun::commun(std::string ip, int port, bool isServer,bool fthread):
     ip_(ip),port_(port),buffSize_(6000),
     fisServer_(isServer),fhvClient_(false),fstopRcv_(false),fnewData_(false),
     fstopClientBind_(false), fthread_(fthread),fhvServer_(0),fstopServerWait_(0){
@@ -17,7 +17,8 @@ commun::~commun(){
     commun::closeSock();
 }
 
-void commun::setup(std::string ip, int port, bool isServer, bool fthread){
+void commun::setup(std::string ip, int port, bool isServer,
+                        bool fthread){
     if (fsetup_)
         return;
 
@@ -26,6 +27,7 @@ void commun::setup(std::string ip, int port, bool isServer, bool fthread){
     port_= port;
     fisServer_= isServer;
     fthread_= fthread;
+    timeout_= 5;
 
     server_.sin_family= AF_INET;
     server_.sin_port= htons(static_cast<unsigned short>(port_));
@@ -72,6 +74,9 @@ void commun::setup(std::string ip, int port, bool isServer, bool fthread){
         }
         threadWaitClientBind_= boost::thread(&commun::waitClientLoop,this);
     }
+
+    threadTestConnect_= boost::thread(&commun::testConnectionLoop,this);
+//    threadMonitorTimeout_= boost::thread(&commun::monitorRcvTimeout,this);
 }
 
 void commun::closeSock(){
@@ -79,6 +84,7 @@ void commun::closeSock(){
     fstopRcv_= true;
     fstopClientBind_= true;
     fstopServerWait_= true;
+    fstopTimeout_= true;
 
     threadRcvData_.interrupt();
     threadRcvData_.join();
@@ -88,6 +94,10 @@ void commun::closeSock(){
     pthread_cancel(threadWaitClientBind_.native_handle());
     threadWaitServer_.interrupt();
     threadWaitServer_.join();
+
+    fstopTestConnect_= true;
+    threadTestConnect_.interrupt();
+    threadTestConnect_.join();
 
     close(clientfd_);
     close(serverfd_);
@@ -101,11 +111,13 @@ int commun::waitForClient(){
     }
     printf("Waiting for Client..\n");
     clientfd_= accept(serverfd_, (struct sockaddr *)&client_, &clientLen_);
+    printf("Accepted\n");
     if (clientfd_<0){
         printf("Error on accept\n"); return -1;
     }
     fhvClient_=true;
     threadRcvData_= boost::thread(&commun::rcvData,this);
+//    threadMonitorTimeout_= boost::thread(&commun::monitorRcvTimeout,this);
 
     return clientfd_;
 }
@@ -175,21 +187,23 @@ void commun::rcvData(){
 }
 
 void commun::monitorRcvTimeout(){
-    std::chrono::high_resolution_clock::time_point timeCheck;
     double t= 0;
+    dataRcvTime_= std::chrono::high_resolution_clock::now();
     while(!fstopRcv_ && t<timeout_){
-        timeCheck= std::chrono::high_resolution_clock::now();
+        if ((fisServer_ && !fhvClient_) || (!fisServer_ && !fhvServer_))
+            dataRcvTime_= std::chrono::high_resolution_clock::now();
+
         t=std::chrono::duration_cast<std::chrono::duration<double> >
-                (timeCheck-dataRcvTime_).count();
+                (std::chrono::high_resolution_clock::now()-dataRcvTime_).count();
+
+
         usleep(1e5);
+        boost::this_thread::interruption_point();
     }
     fstopRcv_=true;
-}
 
-void commun::rcvDataThread(double timeout){
-    timeout_= timeout;
-    threadRcvData_= boost::thread(&commun::rcvData,this);
-    threadMonitorTimeout_= boost::thread(&commun::monitorRcvTimeout,this);
+    return;
+
 }
 
 std::string commun::processSendVect(std::vector<double> sendData){
@@ -210,14 +224,18 @@ long commun::sendData(std::vector<double> sendData){
     std::string sendStr= commun::processSendVect(sendData);
     const char* sendStrBuff= sendStr.c_str();
     long n= send(clientfd_,sendStrBuff,strlen(sendStrBuff),SEND_NOSIGNAL);
-    if (fisServer_ && n<0){
+    return commun::checkSent(n);
+}
+
+long commun::checkSent(long n){
+    if (fisServer_ && fhvClient_ && n<0){
         printf("Client Closed Connection\n");
-        fhvClient_=false;
+        fhvClient_= false;
         threadRcvData_.interrupt();
         rcvStrBuff_="";
         return -1;
     }
-    if (n<0){
+    if (!fisServer_ && fhvServer_ && n<0){
         printf("Server Closed Connection\n");
         exit(1);
     }
@@ -239,23 +257,13 @@ bool commun::checkNewData(){
 }
 
 bool commun::testConnection(){
-    if (!fhvClient_){
+    if (fisServer_ && !fhvClient_)
         return 0;
-    }
+    if(!fisServer_ && !fhvServer_)
+        return 0;
     const char* checkStr= "0";
     long n= send(clientfd_,checkStr,strlen(checkStr),SEND_NOSIGNAL);
-    if (fisServer_ && n<0){
-        printf("Client Closed Connection\n");
-        fhvClient_=false;
-        threadRcvData_.interrupt();
-        rcvStrBuff_="";
-        return 0;
-    }
-    if (n<0){
-        printf("Server Closed Connection\n");
-        exit(1);
-    }
-    return 1;
+    return commun::checkSent(n);
 }
 
 bool commun::checkConnection(){
@@ -263,4 +271,14 @@ bool commun::checkConnection(){
         return fhvClient_;
     else
         return fhvServer_;
+}
+
+void commun::testConnectionLoop(){
+    fstopTestConnect_= false;
+    while(!fstopTestConnect_){
+        commun::testConnection();
+
+        usleep(1e4);
+        boost::this_thread::interruption_point();
+    }
 }
