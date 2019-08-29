@@ -6,14 +6,14 @@ QMAKE_CXXFLAGS += -std=c++11
 
 SOURCES += \
         main.cpp \
-    commun.cpp \
     serialcom.cpp \
 #    ../util/joystick.cpp
+    tcpcom.cpp
 
 HEADERS += \
-    commun.h \
     serialcom.h \
 #    ../util/joystick.h
+    tcpcom.h
 
 
 macx {

@@ -1,27 +1,27 @@
-#include "commun.h"
+#include "tcpcom.h"
 
-commun::commun():buffSize_(6000),fsetup_(false),fhvClient_(false),fstopRcv_(false),
+tcpcom::tcpcom():buffSize_(6000),fsetup_(false),fhvClient_(false),fstopRcv_(false),
     fnewData_(false),fstopClientBind_(false),fhvServer_(0),fstopServerWait_(0){
 
 }
 
-commun::commun(std::string ip, int port, bool isServer,bool fthread):
+tcpcom::tcpcom(std::string ip, int port, bool isServer,bool fthread):
     ip_(ip),port_(port),buffSize_(6000),
     fisServer_(isServer),fhvClient_(false),fstopRcv_(false),fnewData_(false),
     fstopClientBind_(false), fthread_(fthread),fhvServer_(0),fstopServerWait_(0){
 
-    commun::setup(ip, port,isServer,fthread);
+    tcpcom::setup(ip, port,isServer,fthread);
 }
 
-commun::~commun(){
-    commun::closeSock();
+tcpcom::~tcpcom(){
+    tcpcom::closeSock();
 }
 
-void commun::setup(){
-    return commun::setup(ip_,port_,fisServer_,fthread_);
+void tcpcom::setup(){
+    return tcpcom::setup(ip_,port_,fisServer_,fthread_);
 }
 
-void commun::setup(std::string ip, int port, bool isServer,
+void tcpcom::setup(std::string ip, int port, bool isServer,
                         bool fthread){
     if (fsetup_)
         return;
@@ -53,9 +53,9 @@ void commun::setup(std::string ip, int port, bool isServer,
                 exit(1);
             }
             fhvServer_=1;
-            threadRcvData_= boost::thread(&commun::rcvData,this);
+            threadRcvData_= boost::thread(&tcpcom::rcvData,this);
         }else{
-            threadWaitServer_= boost::thread(&commun::waitServerConnection,this);
+            threadWaitServer_= boost::thread(&tcpcom::waitServerConnection,this);
         }
     }
 
@@ -74,16 +74,16 @@ void commun::setup(std::string ip, int port, bool isServer,
         clientLen_= sizeof(client_);
 
         if(!fthread_){
-            commun::waitForClient();
+            tcpcom::waitForClient();
         }
-        threadWaitClientBind_= boost::thread(&commun::waitClientLoop,this);
+        threadWaitClientBind_= boost::thread(&tcpcom::waitClientLoop,this);
     }
 
-    threadTestConnect_= boost::thread(&commun::testConnectionLoop,this);
-//    threadMonitorTimeout_= boost::thread(&commun::monitorRcvTimeout,this);
+    threadTestConnect_= boost::thread(&tcpcom::testConnectionLoop,this);
+//    threadMonitorTimeout_= boost::thread(&tcpcom::monitorRcvTimeout,this);
 }
 
-void commun::closeSock(){
+void tcpcom::closeSock(){
     fsetup_= false;
     fstopRcv_= true;
     fstopClientBind_= true;
@@ -108,7 +108,7 @@ void commun::closeSock(){
 }
 
 
-int commun::waitForClient(){
+int tcpcom::waitForClient(){
     if (!fisServer_){
         printf("Not Server\n");
         return -1;
@@ -120,33 +120,33 @@ int commun::waitForClient(){
         printf("Error on accept\n"); return -1;
     }
     fhvClient_=true;
-    threadRcvData_= boost::thread(&commun::rcvData,this);
-//    threadMonitorTimeout_= boost::thread(&commun::monitorRcvTimeout,this);
+    threadRcvData_= boost::thread(&tcpcom::rcvData,this);
+//    threadMonitorTimeout_= boost::thread(&tcpcom::monitorRcvTimeout,this);
 
     return clientfd_;
 }
 
-void commun::waitClientLoop(){
+void tcpcom::waitClientLoop(){
     while(!fstopClientBind_){
         if (!fhvClient_)
-            commun::waitForClient();
+            tcpcom::waitForClient();
         usleep(1e5);
         boost::this_thread::interruption_point();
     }
 }
 
-void commun::waitServerConnection(){
+void tcpcom::waitServerConnection(){
     while(connect(clientfd_,(struct sockaddr *)&server_,sizeof(server_))<0
           && !fstopServerWait_){
         usleep(1e5);
         boost::this_thread::interruption_point();
     }
     fhvServer_=1;
-    threadRcvData_= boost::thread(&commun::rcvData,this);
+    threadRcvData_= boost::thread(&tcpcom::rcvData,this);
 }
 
 
-std::vector<double> commun::processRcvStr(){
+std::vector<double> tcpcom::processRcvStr(){
     std::vector<double> parseVect;
     std::string parseStr= "";
 
@@ -174,7 +174,7 @@ std::vector<double> commun::processRcvStr(){
     return rcvVect_;
 }
 
-void commun::rcvData(){
+void tcpcom::rcvData(){
     while (!fstopRcv_){
         char buff[buffSize_];
         long n= read(clientfd_,buff,static_cast<unsigned long>(buffSize_));
@@ -183,14 +183,14 @@ void commun::rcvData(){
             if (buff[i]!='\n'){
                 rcvStrBuff_+=buff[i];
             }else{
-                commun::processRcvStr();
+                tcpcom::processRcvStr();
             }
         }
         boost::this_thread::interruption_point();
     }
 }
 
-void commun::monitorRcvTimeout(){
+void tcpcom::monitorRcvTimeout(){
     double t= 0;
     dataRcvTime_= std::chrono::high_resolution_clock::now();
     while(!fstopRcv_ && t<timeout_){
@@ -210,7 +210,7 @@ void commun::monitorRcvTimeout(){
 
 }
 
-std::string commun::processSendVect(std::vector<double> sendData){
+std::string tcpcom::processSendVect(std::vector<double> sendData){
     std::string sendStrBuff;
     for (unsigned int i=0;i<sendData.size();i++){
         sendStrBuff+= std::to_string(sendData.at(i)) + ",";
@@ -219,19 +219,19 @@ std::string commun::processSendVect(std::vector<double> sendData){
     return sendStrBuff;
 }
 
-long commun::sendData(std::vector<double> sendData){
+long tcpcom::sendData(std::vector<double> sendData){
     if (fisServer_ && !fhvClient_)
         return -1;
     if (!fisServer_ && !fhvServer_)
         return -1;
 
-    std::string sendStr= commun::processSendVect(sendData);
+    std::string sendStr= tcpcom::processSendVect(sendData);
     const char* sendStrBuff= sendStr.c_str();
     long n= send(clientfd_,sendStrBuff,strlen(sendStrBuff),SEND_NOSIGNAL);
-    return commun::checkSent(n);
+    return tcpcom::checkSent(n);
 }
 
-long commun::checkSent(long n){
+long tcpcom::checkSent(long n){
     if (fisServer_ && fhvClient_ && n<0){
         printf("Client Closed Connection\n");
         fhvClient_= false;
@@ -246,41 +246,41 @@ long commun::checkSent(long n){
     return n;
 }
 
-std::vector<double> commun::getData(){
+std::vector<double> tcpcom::getData(){
     fnewData_=false;
     return rcvVect_;
 }
 
-void commun::stopRcv(){
+void tcpcom::stopRcv(){
     fstopRcv_=true;
     return;
 }
 
-bool commun::checkNewData(){
+bool tcpcom::checkNewData(){
     return fnewData_;
 }
 
-bool commun::testConnection(){
+bool tcpcom::testConnection(){
     if (fisServer_ && !fhvClient_)
         return 0;
     if(!fisServer_ && !fhvServer_)
         return 0;
     const char* checkStr= "0";
     long n= send(clientfd_,checkStr,strlen(checkStr),SEND_NOSIGNAL);
-    return commun::checkSent(n);
+    return tcpcom::checkSent(n);
 }
 
-bool commun::checkConnection(){
+bool tcpcom::checkConnection(){
     if (fisServer_)
         return fhvClient_;
     else
         return fhvServer_;
 }
 
-void commun::testConnectionLoop(){
+void tcpcom::testConnectionLoop(){
     fstopTestConnect_= false;
     while(!fstopTestConnect_){
-        commun::testConnection();
+        tcpcom::testConnection();
 
         usleep(1e4);
         boost::this_thread::interruption_point();

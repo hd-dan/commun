@@ -1,5 +1,5 @@
-#ifndef COMMUN_H
-#define COMMUN_H
+#ifndef TCPCOM_H
+#define TCPCOM_H
 
 #include <iostream>
 #include <stdio.h>
@@ -19,7 +19,7 @@
 #define SEND_NOSIGNAL MSG_NOSIGNAL
 #endif
 
-class commun{
+class tcpcom{
 private:
 
     std::string ip_;
@@ -70,9 +70,9 @@ private:
     long checkSent(long n);
 
 public:
-    commun();
-    ~commun();
-    commun(std::string ip, int port, bool isServer, bool fthread=0);
+    tcpcom();
+    ~tcpcom();
+    tcpcom(std::string ip, int port, bool isServer, bool fthread=0);
     void setup(std::string ip, int port, bool isServer, bool fthread=0);
     void setup();
     void closeSock();
@@ -92,4 +92,4 @@ public:
 
 };
 
-#endif // COMMUN_H
+#endif // TCPCOM_H
