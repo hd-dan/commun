@@ -139,6 +139,8 @@ void tcpcom::waitClientLoop(){
 
 void tcpcom::waitServerConnection(){
     printf("Waiting for Server..\n");
+
+    clientfd_= socket(AF_INET,SOCK_STREAM,0);
     while(connect(clientfd_,(struct sockaddr *)&server_,sizeof(server_))<0
           && !fstopServerWait_){
         usleep(1e5);

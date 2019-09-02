@@ -12,20 +12,18 @@
 void runClient(){
     std::string ip("127.0.0.1");
 //    std::string ip("192.168.0.99");
-    int port= 8888;
-    tcpcom client(ip,port,false);
+    tcpcom client(ip,8888,false,true);
 
-    std::vector<double> data;
-    std::chrono::high_resolution_clock::time_point t0,t1;
-    t0= std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point t0=
+                std::chrono::high_resolution_clock::now();
     double t=0;
     int ii=0;
-    while(t<10){
-        t1= std::chrono::high_resolution_clock::now();
-        t=std::chrono::duration_cast<std::chrono::duration<double> >(t1-t0).count();
+    while(t<60){
+        t=std::chrono::duration_cast<std::chrono::duration<double> >(
+                    std::chrono::high_resolution_clock::now()-t0).count();
 
         if (client.checkNewData()){
-            data= client.getData();
+            std::vector<double> data= client.getData();
             printf("t: %.3f  | ",t);
             for (unsigned int i=0;i<data.size();i++){
                 printf("%.3f, ",data.at(i));
@@ -34,35 +32,28 @@ void runClient(){
         }
 
         client.sendData(std::vector<double> (2,ii));
-        ii++;
-        ii=ii>255?0:ii;
+        ii++; ii=ii>255?0:ii;
         usleep(1e4);
     }
-    client.stopRcv();
 }
 
 
 void runServer(){
     std::string ip("127.0.0.1");
 //    std::string ip("192.168.0.99");
-    int port= 8888;
-    tcpcom server(ip,port,true);
+    tcpcom server(ip,8888,true,true);
 
     std::vector<double> dummy= {1,2.5,-2.2,1.0002};
-    printf("haha\n");
 
-    std::vector<double> data;
-    std::chrono::high_resolution_clock::time_point t0,t1;
-    t0= std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point t0=
+                    std::chrono::high_resolution_clock::now();
     double t=0;
-
-    printf("testing\n");
-    while(t<5){
-        t1= std::chrono::high_resolution_clock::now();
-        t=std::chrono::duration_cast<std::chrono::duration<double> >(t1-t0).count();
+    while(t<60){
+        t=std::chrono::duration_cast<std::chrono::duration<double> >(
+                    std::chrono::high_resolution_clock::now()-t0).count();
 
         if (server.checkNewData()){
-            data= server.getData();
+            std::vector<double> data= server.getData();
             printf("t: %.3f  | ",t);
             for (unsigned int i=0;i<data.size();i++){
                 printf("%.3f, ",data.at(i));
@@ -70,13 +61,10 @@ void runServer(){
             printf("\n");
         }
         server.sendData(dummy);
-        server.checkConnection();
 
-        printf("looping.. %.3f\n",t);
         usleep(1e4);
     }
-//    server.stopRcv();
-//    server.closeSock();
+
 }
 
 void runSerialRcv(){
@@ -130,12 +118,12 @@ void testBle(){
 int main(int argc, char * argv[]){
     std::cout << "Hello World!" << std::endl;
 
-//    runServer();
+    runServer();
 //    runClient();
 
 //    runSerialRcv();
 
-    testBle();
+//    testBle();
 
     return 0;
 }
