@@ -8,12 +8,14 @@ SOURCES += \
         main.cpp \
     serialcom.cpp \
 #    ../util/joystick.cpp
-    tcpcom.cpp
+    tcpcom.cpp \
+    btcom.cpp
 
 HEADERS += \
     serialcom.h \
 #    ../util/joystick.h
-    tcpcom.h
+    tcpcom.h \
+    btcom.h
 
 
 macx {
@@ -23,5 +25,5 @@ macx {
 unix:!macx {
     LIBS += -lboost_thread -lrt
 }
-LIBS += -pthread -lutil -lboost_iostreams -lboost_system
+LIBS += -pthread -lutil -lboost_iostreams -lboost_system -lgattlib
 

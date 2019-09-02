@@ -41,6 +41,7 @@ private:
 
     bool fthread_;
     bool fhvServer_;
+    bool fserverDc_;
     bool fstopServerWait_;
     bool fstayAlive_;
 
@@ -86,6 +87,7 @@ public:
     long sendData(std::vector<double> data);
     bool testConnection();
     bool checkConnection();
+    bool checkServerDc();
 
     void stopRcv();
     bool checkNewData();

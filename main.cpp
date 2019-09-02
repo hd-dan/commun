@@ -6,11 +6,14 @@
 
 //#include "../util/joystick.h"
 
+#include <gattlib.h>
+
+
 void runClient(){
     std::string ip("127.0.0.1");
 //    std::string ip("192.168.0.99");
     int port= 8888;
-    commun client(ip,port,false);
+    tcpcom client(ip,port,false);
 
     std::vector<double> data;
     std::chrono::high_resolution_clock::time_point t0,t1;
@@ -43,7 +46,7 @@ void runServer(){
     std::string ip("127.0.0.1");
 //    std::string ip("192.168.0.99");
     int port= 8888;
-    commun server(ip,port,true);
+    tcpcom server(ip,port,true);
 
     std::vector<double> dummy= {1,2.5,-2.2,1.0002};
     printf("haha\n");
@@ -105,13 +108,34 @@ void runSerialRcv(){
 }
 
 
+void testBle(){
+    std::string btmac= "34:B1:F7:D4:5D:D4";
+
+    std::string cmdClose= "0x32DA";
+    std::string cmdOpen= "0x31DA";
+
+    gatt_connection_t* bluetooth= gattlib_connect(NULL,btmac.c_str(),
+                                        GATTLIB_CONNECTION_OPTIONS_LEGACY_DEFAULT);
+
+    if (bluetooth!=NULL){
+        std::string cmd= cmdClose;
+        cmd= cmdOpen;
+        long int data= strtol(cmd.c_str(),NULL,16);
+        int ret= gattlib_write_char_by_handle(bluetooth,37,&data,sizeof(data));
+    }
+    gattlib_disconnect(bluetooth);
+
+}
+
 int main(int argc, char * argv[]){
     std::cout << "Hello World!" << std::endl;
 
 //    runServer();
 //    runClient();
 
-    runSerialRcv();
+//    runSerialRcv();
+
+    testBle();
 
     return 0;
 }

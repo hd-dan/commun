@@ -1,14 +1,16 @@
 #include "tcpcom.h"
 
 tcpcom::tcpcom():buffSize_(6000),fsetup_(false),fhvClient_(false),fstopRcv_(false),
-    fnewData_(false),fstopClientBind_(false),fhvServer_(0),fstopServerWait_(0){
+    fnewData_(false),fstopClientBind_(false),fhvServer_(0),
+    fserverDc_(0),fstopServerWait_(0),fstayAlive_(1){
 
 }
 
 tcpcom::tcpcom(std::string ip, int port, bool isServer,bool fthread):
-    ip_(ip),port_(port),buffSize_(6000),
+    ip_(ip),port_(port),buffSize_(6000), fsetup_(false),
     fisServer_(isServer),fhvClient_(false),fstopRcv_(false),fnewData_(false),
-    fstopClientBind_(false), fthread_(fthread),fhvServer_(0),fstopServerWait_(0){
+    fstopClientBind_(false), fthread_(fthread),fhvServer_(0),
+    fserverDc_(0), fstopServerWait_(0),fstayAlive_(1){
 
     tcpcom::setup(ip, port,isServer,fthread);
 }
@@ -136,12 +138,14 @@ void tcpcom::waitClientLoop(){
 }
 
 void tcpcom::waitServerConnection(){
+    printf("Waiting for Server..\n");
     while(connect(clientfd_,(struct sockaddr *)&server_,sizeof(server_))<0
           && !fstopServerWait_){
         usleep(1e5);
         boost::this_thread::interruption_point();
     }
     fhvServer_=1;
+    fserverDc_=0;
     threadRcvData_= boost::thread(&tcpcom::rcvData,this);
 }
 
@@ -241,7 +245,11 @@ long tcpcom::checkSent(long n){
     }
     if (!fisServer_ && fhvServer_ && n<0){
         printf("Server Closed Connection\n");
-        exit(1);
+        fhvServer_= false;
+        fserverDc_= true;
+        if (fstayAlive_)
+            threadWaitServer_= boost::thread(&tcpcom::waitServerConnection,this);
+        return -1;
     }
     return n;
 }
@@ -275,6 +283,10 @@ bool tcpcom::checkConnection(){
         return fhvClient_;
     else
         return fhvServer_;
+}
+
+bool tcpcom::checkServerDc(){
+    return fserverDc_;
 }
 
 void tcpcom::testConnectionLoop(){
