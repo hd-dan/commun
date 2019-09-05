@@ -249,6 +249,8 @@ long tcpcom::checkSent(long n){
         printf("Server Closed Connection\n");
         fhvServer_= false;
         fserverDc_= true;
+        threadRcvData_.interrupt();
+        rcvStrBuff_="";
         if (fstayAlive_)
             threadWaitServer_= boost::thread(&tcpcom::waitServerConnection,this);
         return -1;
