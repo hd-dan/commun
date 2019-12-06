@@ -68,30 +68,44 @@ void runServer(){
 }
 
 void runSerialRcv(){
-//    serialCom serial("/dev/ttyACM0");
-    serialCom serial("/dev/tty.usbmodem14101");
+    serialCom serial("/dev/ttyUSB0",115200);
+//    serialCom serial("/dev/tty.usbmodem14101");
 
-    serial.setDelimiter(' ');
+    serial.setDelimiter(',');
+    serial.setSendInt(true);
 
     double t=0;
     std::vector<double> rcvData;
     std::vector<std::string> rcvStr;
+    bool fsent=false;
+    bool fsent2= false;
+    bool fsent3= false;
     while(t<10){
 
-        if (serial.checkNewData()){
+        if (t<=3&&!fsent){
+            serial.sendData(std::vector<double>{1});
+            fsent= true;
+        }
+        if (t>3&&t<7&&!fsent2){
+            serial.sendData(std::vector<double>{-1});
+            fsent2= true;
+        }
+        if (t>7&&!fsent3){
+            serial.sendData(std::vector<double>{0});
+            fsent3= true;
+        }
+
+//        if (serial.checkNewData()){
 //            rcvData= serial.getData();
+//            printf("t:%.3f | ",t);
 //            for(unsigned int i=0;i<rcvData.size();i++){
 //                printf("%.3f,",rcvData.at(i));
 //            }
-            rcvStr= serial.getRcvStr();
-            for(unsigned int i=0;i<rcvStr.size();i++){
-                printf("%s,",rcvStr.at(i).c_str());
-            }
-            printf("\n");
-        }
+//            printf("\n");
+//        }
 
         usleep(1e3);
-        t+=1e-3;
+        t+=5e-3;
     }
 }
 

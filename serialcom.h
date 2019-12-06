@@ -2,6 +2,7 @@
 #define SERIALCOM_H
 
 #include <fcntl.h>
+#include <termios.h>
 #include <string>
 #include <vector>
 #include <boost/thread.hpp>
@@ -16,6 +17,7 @@ class serialCom{
 private:
     std::string usbPort_;
     int usbfd_;
+    int baudrate_;
     const int buffSize_;
 
     bool fsetup_;
@@ -33,12 +35,13 @@ private:
     std::string processSendVect(std::vector<double> sendData);
 
     std::mutex mtxRcv_;
+    bool fsendInt_;
 
 public:
     serialCom();
-    serialCom(std::string usbPort);
+    serialCom(std::string usbPort, int baudrate=9600);
     ~serialCom();
-    void setupUsb(std::string usbPort);
+    void setupUsb(std::string usbPort, int baudrate=9600);
     void closeUsb();
 
     void rcvData();
@@ -48,6 +51,7 @@ public:
 
     int sendData(std::vector<double> data);
     void setDelimiter(char delimiter);
+    void setSendInt(bool fsendInt=true);
 };
 
 #endif // SERIALCOM_H
