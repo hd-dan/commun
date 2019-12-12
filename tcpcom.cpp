@@ -55,6 +55,7 @@ void tcpcom::setup(std::string ip, int port, bool isServer,
                 exit(1);
             }
             fhvServer_=1;
+            printf("Connected Server\n");
             threadRcvData_= boost::thread(&tcpcom::rcvData,this);
         }else{
             threadWaitServer_= boost::thread(&tcpcom::waitServerConnection,this);
@@ -148,6 +149,7 @@ void tcpcom::waitServerConnection(){
     }
     fhvServer_=1;
     fserverDc_=0;
+    printf("Connected Server\n");
     threadRcvData_= boost::thread(&tcpcom::rcvData,this);
 }
 
